@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Backward</title>
+  <style>
+    :root {
+      --bg: #f7f4ef;
+      --ink: #1a1917;
+      --muted: #8a847a;
+      --line: #e5e0d6;
+      --card: #fffcf7;
+      --accent: #1f6f5b;
+      --warm: #c45c2a;
+      --grad: #3d5a80;
+      --err: #a33b3b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    .wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+    }
+    header {
+      margin-bottom: 1.35rem;
+    }
+    header h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 400;
+      font-size: 2rem;
+      letter-spacing: -0.03em;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: flex-start; }
+    }
+    .side, .main-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1.1rem 1.15rem;
+    }
+    #expr {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.35rem;
+      line-height: 1.3;
+      color: var(--accent);
+      resize: none;
+      min-height: 2.6rem;
+      padding: 0;
+      margin: 0 0 0.35rem;
+    }
+    #expr:focus { outline: none; }
+    #expr.bad { color: var(--err); }
+    .err {
+      color: var(--err);
+      font-size: 0.8rem;
+      min-height: 0;
+      margin: 0 0 0.5rem;
+    }
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 1.1rem;
+      padding-bottom: 1.1rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .presets button {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 0.22rem 0.6rem;
+      font: inherit;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+    .presets button:hover { color: var(--ink); border-color: var(--ink); }
+    #paramBox { margin-bottom: 0.35rem; }
+    .ctrl { margin-bottom: 0.85rem; }
+    .ctrl-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.2rem;
+      font-size: 0.88rem;
+    }
+    .ctrl-top .name {
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .ctrl-top .val {
+      font-variant-numeric: tabular-nums;
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+    .ctrl .tag {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 0.05rem 0.28rem;
+    }
+    .name input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 0.9rem;
+      height: 0.9rem;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      height: 1.2rem;
+    }
+    .row-lr {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin: 0.25rem 0 0.9rem;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+    .row-lr input { flex: 1; }
+    .row-lr #vlr {
+      color: var(--ink);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      min-width: 2.4rem;
+      text-align: right;
+    }
+    .btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.4rem;
+    }
+    .btns button {
+      border: 1px solid var(--ink);
+      border-radius: 8px;
+      padding: 0.55rem 0.4rem;
+      font: inherit;
+      font-size: 0.84rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--ink);
+      color: #fff;
+    }
+    .btns button.secondary {
+      background: transparent;
+      color: var(--ink);
+    }
+    .btns button:hover { opacity: 0.88; }
+    .step-msg {
+      margin-top: 0.55rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      min-height: 1.1rem;
+    }
+    .step-msg.warn { color: var(--warm); }
+    .val.flash { color: var(--warm); }
+    .check {
+      display: none; /* hidden: numerical check off by default clutter */
+    }
+    .main { display: flex; flex-direction: column; gap: 1rem; }
+    .graph-scroll {
+      overflow: auto;
+      max-height: 440px;
+      margin: -0.2rem;
+      padding: 0.2rem;
+    }
+    svg.graph { display: block; }
+    .node-card { fill: #fff; stroke: var(--line); stroke-width: 1.25; }
+    .node-card.leaf { stroke: var(--accent); stroke-width: 1.75; }
+    .node-card.loss { stroke: var(--warm); stroke-width: 1.75; }
+    .node-card.const { stroke: #bbb; stroke-dasharray: 3 2; }
+    .node-title { font-size: 12px; font-weight: 600; fill: var(--ink); }
+    .node-data { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+    .node-grad { font-size: 11px; fill: var(--grad); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .edge { fill: none; stroke: #d2ccc0; stroke-width: 1.6; marker-end: url(#arrow); }
+    .edge-add { stroke: var(--accent); stroke-opacity: 0.55; }
+    .edge-mul { stroke: var(--warm); stroke-opacity: 0.55; }
+    .op-badge { font-size: 10px; font-weight: 600; fill: var(--muted); }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .stat {
+      flex: 1 1 100px;
+      min-width: 90px;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--card);
+    }
+    .stat .label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-bottom: 0.15rem;
+      letter-spacing: 0.02em;
+    }
+    .stat .big {
+      font-size: 1.05rem;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .stat .sub { display: none; }
+    .stat.warm .big { color: var(--warm); }
+    .stat.teal .big { color: var(--accent); }
+    .loss-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    #axis {
+      border: 1px solid var(--line);
+      background: transparent;
+      border-radius: 8px;
+      padding: 0.4rem 0.5rem;
+      font: inherit;
+      font-size: 0.85rem;
+      color: var(--ink);
+    }
+    canvas.loss {
+      width: 100%;
+      height: 180px;
+      display: block;
+      border-radius: 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+    #story, #axisLabel, .legend-row, .help { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Backward</h1>
+    </header>
+
+    <div class="grid">
+      <aside class="side">
+        <textarea id="expr" spellcheck="false" rows="2">(w*x + b - y)**2</textarea>
+        <div class="err" id="err"></div>
+        <div class="presets" id="presets"></div>
+        <div id="paramBox"></div>
+        <div class="row-lr">
+          <span>lr</span>
+          <input type="range" id="lr" min="0.001" max="0.5" step="0.001" value="0.1" />
+          <span id="vlr">0.10</span>
+        </div>
+        <label class="check"><input type="checkbox" id="showNum" /> num</label>
+        <div class="btns">
+          <button type="button" class="primary" id="step">Шаг</button>
+          <button type="button" class="secondary" id="animate">Авто</button>
+          <button type="button" class="secondary" id="resetVals">Сброс</button>
+        </div>
+        <div class="step-msg" id="stepMsg"></div>
+      </aside>
+
+      <section class="main">
+        <div class="main-card">
+          <div class="graph-scroll">
+            <svg class="graph" id="graph"></svg>
+          </div>
+        </div>
+        <div class="stats" id="stats"></div>
+        <div class="main-card loss-wrap">
+          <select id="axis" aria-label="ось"></select>
+          <canvas class="loss" id="lossCanvas" width="920" height="180"></canvas>
+        </div>
+        <div id="story"></div>
+        <span id="axisLabel"></span>
+      </section>
+    </div>
+  </div>
+<script>
+/* ===================== mini autograd ===================== */
+let NODE_SEQ = 0;
+class Value {
+  constructor(data, children = [], op = "", label = "") {
+    this.id = NODE_SEQ++;
+    this.data = data;
+    this.grad = 0;
+    this._prev = children;
+    this._op = op;
+    this.label = label;
+    this._backward = () => {};
+  }
+  static ensure(x) {
+    return x instanceof Value ? x : new Value(+x, [], "", String(x));
+  }
+}
+
+function disp(v) {
+  if (!v) return "?";
+  if (v.label) return v.label;
+  if (v._op) return v._op;
+  return "?";
+}
+function clipLabel(s, n = 18) {
+  s = String(s);
+  return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+function add(a, b) {
+  a = Value.ensure(a); b = Value.ensure(b);
+  const out = new Value(a.data + b.data, [a, b], "+");
+  out.label = clipLabel(`${disp(a)}+${disp(b)}`);
+  out._backward = () => { a.grad += out.grad; b.grad += out.grad; };
+  return out;
+}
+function sub(a, b) {
+  a = Value.ensure(a); b = Value.ensure(b);
+  const out = new Value(a.data - b.data, [a, b], "-");
+  out.label = clipLabel(`${disp(a)}−${disp(b)}`);
+  out._backward = () => { a.grad += out.grad; b.grad -= out.grad; };
+  return out;
+}
+function mul(a, b) {
+  a = Value.ensure(a); b = Value.ensure(b);
+  const out = new Value(a.data * b.data, [a, b], "*");
+  out.label = clipLabel(`${disp(a)}·${disp(b)}`);
+  out._backward = () => { a.grad += out.grad * b.data; b.grad += out.grad * a.data; };
+  return out;
+}
+function div(a, b) {
+  a = Value.ensure(a); b = Value.ensure(b);
+  const out = new Value(a.data / b.data, [a, b], "/");
+  out.label = clipLabel(`${disp(a)}/${disp(b)}`);
+  out._backward = () => {
+    a.grad += out.grad / b.data;
+    b.grad -= out.grad * a.data / (b.data * b.data);
+  };
+  return out;
+}
+function pow(a, n) {
+  a = Value.ensure(a);
+  // числовая степень — без отдельного узла «2» в графе (меньше путаницы)
+  if (!(n instanceof Value)) {
+    const k = +n;
+    const out = new Value(a.data ** k, [a], `**${k}`);
+    out.label = clipLabel(`(${disp(a)})^${k}`);
+    out._backward = () => { a.grad += out.grad * k * (a.data ** (k - 1)); };
+    return out;
+  }
+  const k = n.data;
+  const out = new Value(a.data ** k, [a, n], "**");
+  out.label = clipLabel(`(${disp(a)})^(${disp(n)})`);
+  out._backward = () => {
+    a.grad += out.grad * k * (a.data ** (k - 1));
+    n.grad += out.grad * out.data * Math.log(Math.abs(a.data) + 1e-12);
+  };
+  return out;
+}
+function neg(a) { return mul(a, -1); }
+
+function wrapUnary(name, a, data, backwardFn) {
+  a = Value.ensure(a);
+  const out = new Value(data, [a], name);
+  out.label = clipLabel(`${name}(${disp(a)})`);
+  out._backward = backwardFn(a, out);
+  return out;
+}
+
+const FUNCS = {
+  relu: (a) => {
+    a = Value.ensure(a);
+    return wrapUnary("relu", a, a.data > 0 ? a.data : 0, (a, out) => () => {
+      a.grad += out.grad * (a.data > 0 ? 1 : 0);
+    });
+  },
+  exp: (a) => {
+    a = Value.ensure(a);
+    return wrapUnary("exp", a, Math.exp(a.data), (a, out) => () => { a.grad += out.grad * out.data; });
+  },
+  log: (a) => {
+    a = Value.ensure(a);
+    return wrapUnary("log", a, Math.log(a.data), (a, out) => () => { a.grad += out.grad / a.data; });
+  },
+  sin: (a) => {
+    a = Value.ensure(a);
+    return wrapUnary("sin", a, Math.sin(a.data), (a, out) => () => { a.grad += out.grad * Math.cos(a.data); });
+  },
+  cos: (a) => {
+    a = Value.ensure(a);
+    return wrapUnary("cos", a, Math.cos(a.data), (a, out) => () => { a.grad -= out.grad * Math.sin(a.data); });
+  },
+  tanh: (a) => {
+    a = Value.ensure(a);
+    const t = Math.tanh(a.data);
+    return wrapUnary("tanh", a, t, (a, out) => () => { a.grad += out.grad * (1 - t * t); });
+  },
+  sigmoid: (a) => {
+    a = Value.ensure(a);
+    const s = 1 / (1 + Math.exp(-a.data));
+    return wrapUnary("σ", a, s, (a, out) => () => { a.grad += out.grad * s * (1 - s); });
+  },
+  abs: (a) => {
+    a = Value.ensure(a);
+    return wrapUnary("abs", a, Math.abs(a.data), (a, out) => () => { a.grad += out.grad * Math.sign(a.data); });
+  },
+  sqrt: (a) => {
+    a = Value.ensure(a);
+    return wrapUnary("sqrt", a, Math.sqrt(a.data), (a, out) => () => { a.grad += out.grad * 0.5 / Math.sqrt(a.data); });
+  },
+};
+
+function backward(root) {
+  const topo = [];
+  const seen = new Set();
+  function build(v) {
+    if (seen.has(v)) return;
+    seen.add(v);
+    for (const c of v._prev) build(c);
+    topo.push(v);
+  }
+  build(root);
+  for (const v of topo) v.grad = 0;
+  root.grad = 1;
+  for (let i = topo.length - 1; i >= 0; i--) topo[i]._backward();
+  return topo;
+}
+
+/* ===================== parser ===================== */
+function tokenize(src) {
+  const s = src.replace(/·/g, "*").replace(/\^/g, "**").replace(/\s+/g, "");
+  const tokens = [];
+  let i = 0;
+  while (i < s.length) {
+    if (/[0-9.]/.test(s[i])) {
+      let j = i;
+      while (j < s.length && /[0-9.]/.test(s[j])) j++;
+      tokens.push({ type: "num", value: parseFloat(s.slice(i, j)) });
+      i = j;
+    } else if (/[A-Za-z_]/.test(s[i])) {
+      let j = i;
+      while (j < s.length && /[A-Za-z0-9_]/.test(s[j])) j++;
+      tokens.push({ type: "id", value: s.slice(i, j) });
+      i = j;
+    } else if (s.startsWith("**", i)) {
+      tokens.push({ type: "op", value: "**" }); i += 2;
+    } else if ("+-*/(),=".includes(s[i])) {
+      tokens.push({ type: "op", value: s[i] }); i++;
+    } else {
+      throw new Error(`Неизвестный символ: «${s[i]}»`);
+    }
+  }
+  return tokens;
+}
+
+function parseExpression(src, env) {
+  let raw = src.trim();
+  // allow L = ...
+  const eq = raw.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/);
+  let lossName = "L";
+  if (eq) { lossName = eq[1]; raw = eq[2]; }
+
+  const tokens = tokenize(raw);
+  let pos = 0;
+  const peek = () => tokens[pos];
+  const eat = (v) => {
+    const t = peek();
+    if (!t || (v != null && t.value !== v)) throw new Error(`Ожидалось «${v}», а не «${t && t.value}»`);
+    pos++; return t;
+  };
+
+  function parseExpr() { return parseAdd(); }
+  function parseAdd() {
+    let left = parseMul();
+    while (peek() && (peek().value === "+" || peek().value === "-")) {
+      const op = eat().value;
+      const right = parseMul();
+      left = op === "+" ? add(left, right) : sub(left, right);
+    }
+    return left;
+  }
+  function parseMul() {
+    let left = parsePow();
+    while (peek() && (peek().value === "*" || peek().value === "/")) {
+      const op = eat().value;
+      const right = parsePow();
+      left = op === "*" ? mul(left, right) : div(left, right);
+    }
+    return left;
+  }
+  function parsePow() {
+    let left = parseUnary();
+    if (peek() && peek().value === "**") {
+      eat("**");
+      // литерал 2 в a**2 — не отдельный узел графа
+      if (peek() && peek().type === "num") {
+        const t = eat();
+        left = pow(left, t.value);
+      } else {
+        const right = parsePow();
+        left = pow(left, right);
+      }
+    }
+    return left;
+  }
+  function parseUnary() {
+    if (peek() && peek().value === "-") { eat("-"); return neg(parseUnary()); }
+    if (peek() && peek().value === "+") { eat("+"); return parseUnary(); }
+    return parsePrimary();
+  }
+  function parsePrimary() {
+    const t = peek();
+    if (!t) throw new Error("Неожиданный конец формулы");
+    if (t.type === "num") { eat(); return new Value(t.value, [], "", String(t.value)); }
+    if (t.type === "id") {
+      eat();
+      if (peek() && peek().value === "(") {
+        const name = t.value.toLowerCase();
+        if (!FUNCS[name]) throw new Error(`Нет функции «${t.value}»`);
+        eat("(");
+        const arg = parseExpr();
+        eat(")");
+        return FUNCS[name](arg);
+      }
+      if (!(t.value in env)) {
+        // create leaf on first sight
+        env[t.value] = new Value(defaultValue(t.value), [], "", t.value);
+        env[t.value].label = t.value;
+      }
+      // return shared leaf (same variable used twice)
+      return env[t.value];
+    }
+    if (t.value === "(") {
+      eat("(");
+      const e = parseExpr();
+      eat(")");
+      return e;
+    }
+    throw new Error(`Неожиданный токен «${t.value}»`);
+  }
+
+  const root = parseExpr();
+  if (pos < tokens.length) throw new Error(`Лишний хвост: «${tokens[pos].value}»`);
+  root.label = lossName;
+  return { root, lossName, env };
+}
+
+function defaultValue(name) {
+  const defaults = { w: 0.5, b: -1, x: 2, y: 1, a: 1, c: 0.5, z: 0.2, t: 0.5 };
+  if (name in defaults) return defaults[name];
+  // heuristic: y*, target-like → 1; x* → 1; else 0.5
+  if (/^y/i.test(name)) return 1;
+  if (/^x/i.test(name)) return 1.5;
+  if (/^w/i.test(name)) return 0.4;
+  if (/^b/i.test(name)) return 0;
+  return 0.5;
+}
+
+/* ===================== UI state ===================== */
+const $ = (id) => document.getElementById(id);
+const PRESETS = [
+  { name: "MSE", expr: "(w*x + b - y)**2" },
+  { name: "x²", expr: "(x - 3)**2" },
+  { name: "ReLU", expr: "relu(w*x + b)**2" },
+  { name: "σ", expr: "(sigmoid(w*x + b) - y)**2" },
+  { name: "exp", expr: "exp(-w*x)**2" },
+];
+
+const state = {
+  expr: "(w*x + b - y)**2",
+  values: {},      // name -> number
+  isParam: {},     // name -> bool (SGD updates)
+  lr: 0.1,
+  anim: null,
+  axis: null,
+};
+
+function guessIsParam(name) {
+  // parameters typically w, b, weights; data x, y
+  if (/^(x|y)(\d+)?$/i.test(name)) return false;
+  if (/^(w|b|theta|a)(\d+)?$/i.test(name)) return true;
+  return !/^y/i.test(name) && !/^x/i.test(name);
+}
+
+function buildEnvFromState(names) {
+  const env = {};
+  for (const n of names) {
+    if (!(n in state.values)) state.values[n] = defaultValue(n);
+    if (!(n in state.isParam)) state.isParam[n] = guessIsParam(n);
+    const v = new Value(state.values[n], [], "", n);
+    v.label = n;
+    env[n] = v;
+  }
+  return env;
+}
+
+function discoverNames(src) {
+  // parse once with empty env collecting ids that aren't functions
+  const env = {};
+  parseExpression(src, env);
+  return Object.keys(env);
+}
+
+function evaluate(expr) {
+  NODE_SEQ = 0;
+  const names = discoverNames(expr);
+  const env = buildEnvFromState(names);
+  // re-parse with shared leaves
+  NODE_SEQ = 0;
+  // rebuild leaves with fresh ids but same data
+  const env2 = {};
+  for (const n of names) {
+    env2[n] = new Value(state.values[n], [], "", n);
+    env2[n].label = n;
+  }
+  const { root, lossName } = parseExpression(expr, env2);
+  const topo = backward(root);
+  return { root, lossName, env: env2, topo, names };
+}
+
+function numericalGrad(expr, name, eps = 1e-4) {
+  const old = state.values[name];
+  state.values[name] = old + eps;
+  const Lp = evaluate(expr).root.data;
+  state.values[name] = old - eps;
+  const Lm = evaluate(expr).root.data;
+  state.values[name] = old;
+  return (Lp - Lm) / (2 * eps);
+}
+
+/* ===================== render controls ===================== */
+function renderParams(names) {
+  const box = $("paramBox");
+  box.innerHTML = "";
+  names.forEach((n) => {
+    const wrap = document.createElement("div");
+    wrap.className = "ctrl";
+    const top = document.createElement("div");
+    top.className = "ctrl-top";
+    const left = document.createElement("span");
+    left.className = "name";
+    left.textContent = n;
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = !!state.isParam[n];
+    cb.title = "параметр SGD";
+    cb.addEventListener("change", () => {
+      state.isParam[n] = cb.checked;
+      render();
+    });
+    left.appendChild(document.createTextNode(" "));
+    left.appendChild(cb);
+    const val = document.createElement("span");
+    val.className = "val";
+    val.textContent = fmt(state.values[n]);
+    top.appendChild(left);
+    top.appendChild(val);
+    const range = document.createElement("input");
+    range.type = "range";
+    range.min = -3; range.max = 3; range.step = 0.01;
+    range.value = state.values[n];
+    range.addEventListener("input", () => {
+      state.values[n] = parseFloat(range.value);
+      val.textContent = fmt(state.values[n]);
+      render();
+    });
+    wrap.appendChild(top);
+    wrap.appendChild(range);
+    box.appendChild(wrap);
+  });
+
+  // axis select
+  const axis = $("axis");
+  const prev = state.axis && names.includes(state.axis) ? state.axis : (names.find(n => state.isParam[n]) || names[0]);
+  state.axis = prev;
+  axis.innerHTML = "";
+  names.forEach((n) => {
+    const o = document.createElement("option");
+    o.value = n; o.textContent = n;
+    if (n === state.axis) o.selected = true;
+    axis.appendChild(o);
+  });
+  $("axisLabel").textContent = state.axis || "—";
+}
+
+function fmt(v, d = 3) {
+  if (!Number.isFinite(v)) return String(v);
+  const x = Math.round(v * 10 ** d) / 10 ** d;
+  return x.toFixed(d);
+}
+
+/* ===================== graph layout ===================== */
+function layoutGraph(topo, root) {
+  // 1) глубины операций: листья временно 0
+  const depth = new Map();
+  function dep(v) {
+    if (depth.has(v)) return depth.get(v);
+    if (!v._prev.length) { depth.set(v, 0); return 0; }
+    const d = 1 + Math.max(...v._prev.map(dep));
+    depth.set(v, d);
+    return d;
+  }
+  topo.forEach(dep);
+
+  // 2) кто кого потребляет
+  const consumers = new Map();
+  for (const v of topo) {
+    for (const c of v._prev) {
+      if (!consumers.has(c)) consumers.set(c, []);
+      consumers.get(c).push(v);
+    }
+  }
+
+  // 3) листья сдвигаем вправо — сразу перед своей операцией
+  //    тогда b стоит рядом с «+», а не в куче с w,x у «×»
+  for (const v of topo) {
+    if (v._prev.length) continue;
+    const cons = consumers.get(v) || [];
+    if (!cons.length) continue;
+    const d = Math.min(...cons.map((u) => depth.get(u))) - 1;
+    depth.set(v, d);
+  }
+  const minD = Math.min(...topo.map((v) => depth.get(v)));
+  if (minD !== 0) {
+    for (const v of topo) depth.set(v, depth.get(v) - minD);
+  }
+
+  const maxD = Math.max(...topo.map((v) => depth.get(v)));
+  const cols = Array.from({ length: maxD + 1 }, () => []);
+  topo.forEach((v) => cols[depth.get(v)].push(v));
+
+  // 4) упорядочивание в столбце: рядом с детьми / родителями
+  const order = new Map();
+  cols.forEach((col, ci) => {
+    col.forEach((v, i) => order.set(v, i));
+  });
+  for (let pass = 0; pass < 4; pass++) {
+    // left to right: by average parent order
+    for (let ci = 1; ci <= maxD; ci++) {
+      cols[ci].sort((a, b) => {
+        const pa = a._prev.map((p) => order.get(p)).filter((x) => x != null);
+        const pb = b._prev.map((p) => order.get(p)).filter((x) => x != null);
+        const ma = pa.length ? pa.reduce((s, x) => s + x, 0) / pa.length : order.get(a);
+        const mb = pb.length ? pb.reduce((s, x) => s + x, 0) / pb.length : order.get(b);
+        return ma - mb;
+      });
+      cols[ci].forEach((v, i) => order.set(v, i));
+    }
+    // right to left: by average consumer order
+    for (let ci = maxD - 1; ci >= 0; ci--) {
+      cols[ci].sort((a, b) => {
+        const ca = (consumers.get(a) || []).map((p) => order.get(p)).filter((x) => x != null);
+        const cb = (consumers.get(b) || []).map((p) => order.get(p)).filter((x) => x != null);
+        const ma = ca.length ? ca.reduce((s, x) => s + x, 0) / ca.length : order.get(a);
+        const mb = cb.length ? cb.reduce((s, x) => s + x, 0) / cb.length : order.get(b);
+        return ma - mb;
+      });
+      cols[ci].forEach((v, i) => order.set(v, i));
+    }
+  }
+
+  const NW = 128, NH = 62, GX = 48, GY = 22, PAD = 28;
+  const positions = new Map();
+  let maxH = 0;
+  cols.forEach((col) => {
+    maxH = Math.max(maxH, col.length * (NH + GY) - GY);
+  });
+  cols.forEach((col, ci) => {
+    const h = col.length * (NH + GY) - GY;
+    col.forEach((v, ri) => {
+      positions.set(v, {
+        x: PAD + ci * (NW + GX),
+        y: PAD + ri * (NH + GY) + Math.max(0, (maxH - h) / 2),
+        w: NW,
+        h: NH,
+      });
+    });
+  });
+
+  const width = PAD * 2 + (maxD + 1) * NW + maxD * GX;
+  const height = PAD * 2 + Math.max(maxH, NH);
+  return { positions, width, height, maxD, consumers };
+}
+
+function edgeClass(op) {
+  if (op === "+" || (op && op.includes("+"))) return "edge edge-add";
+  if (op === "*" || op === "·" || (op && op.includes("·"))) return "edge edge-mul";
+  return "edge";
+}
+
+function renderGraph(result) {
+  const svg = $("graph");
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const { topo, root, env } = result;
+  const { positions, width, height } = layoutGraph(topo, root);
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", Math.max(300, height));
+
+  // arrowhead
+  const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+  defs.innerHTML = `
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+      markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9a9184"/>
+    </marker>`;
+  svg.appendChild(defs);
+
+  // edges: вход сверху = 1-й аргумент, снизу = 2-й (видно, что b — второй вход «+»)
+  for (const v of topo) {
+    v._prev.forEach((c, idx) => {
+      const a = positions.get(c), b = positions.get(v);
+      if (!a || !b) return;
+      const x1 = a.x + a.w, y1 = a.y + a.h / 2;
+      const slots = Math.max(v._prev.length, 1);
+      const y2 = b.y + ((idx + 1) / (slots + 1)) * b.h;
+      const x2 = b.x;
+      const mx = (x1 + x2) / 2;
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`);
+      path.setAttribute("class", edgeClass(v._op));
+      svg.appendChild(path);
+    });
+  }
+
+  for (const v of topo) {
+    const p = positions.get(v);
+    const isLeaf = v._prev.length === 0;
+    const isConst = isLeaf && !(v.label && Object.prototype.hasOwnProperty.call(env, v.label));
+    const isLoss = v === root;
+    let kind = "";
+    if (isLoss) kind = "loss";
+    else if (isLeaf && !isConst) kind = "leaf";
+    else if (isConst) kind = "const";
+
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", p.x); rect.setAttribute("y", p.y);
+    rect.setAttribute("width", p.w); rect.setAttribute("height", p.h);
+    rect.setAttribute("rx", 8);
+    rect.setAttribute("class", `node-card ${kind}`);
+    g.appendChild(rect);
+
+    // бейдж операции
+    if (v._op && !isLeaf) {
+      const badge = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      badge.setAttribute("x", p.x + p.w - 8);
+      badge.setAttribute("y", p.y + 14);
+      badge.setAttribute("text-anchor", "end");
+      badge.setAttribute("class", "op-badge");
+      badge.textContent = v._op === "*" ? "×" : v._op;
+      g.appendChild(badge);
+    }
+
+    const title = v === root ? (v.label || "L") : (v.label || v._op || "?");
+    const t1 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t1.setAttribute("x", p.x + 8); t1.setAttribute("y", p.y + 18);
+    t1.setAttribute("class", "node-title");
+    t1.textContent = title.length > 16 ? title.slice(0, 15) + "…" : title;
+    g.appendChild(t1);
+
+    const t2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t2.setAttribute("x", p.x + 8); t2.setAttribute("y", p.y + 36);
+    t2.setAttribute("class", "node-data");
+    t2.textContent = `data ${fmt(v.data)}`;
+    g.appendChild(t2);
+
+    const t3 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t3.setAttribute("x", p.x + 8); t3.setAttribute("y", p.y + 52);
+    t3.setAttribute("class", "node-grad");
+    t3.textContent = `grad ${fmt(v.grad)}`;
+    g.appendChild(t3);
+
+    svg.appendChild(g);
+  }
+}
+
+function renderStats(result) {
+  const { root, env, names, lossName } = result;
+  const box = $("stats");
+  box.innerHTML = "";
+  const cards = [{ key: lossName, val: root.data, cls: "warm" }];
+  names.filter((n) => state.isParam[n]).forEach((n) => {
+    cards.push({ key: `∂/${n}`, val: env[n].grad, cls: "teal" });
+  });
+  cards.forEach((c) => {
+    const d = document.createElement("div");
+    d.className = `stat ${c.cls}`;
+    d.innerHTML = `<div class="label">${c.key}</div><div class="big">${fmt(c.val, 4)}</div>`;
+    box.appendChild(d);
+  });
+}
+
+function renderStory(result) {
+  const el = $("story");
+  if (el) el.style.display = "none";
+}
+
+function renderLoss(result) {
+  const canvas = $("lossCanvas");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const axis = state.axis;
+  if (!axis || !(axis in state.values)) return;
+
+  const lo = -3, hi = 3, n = 160;
+  const ys = [];
+  let ymin = Infinity, ymax = -Infinity;
+  const saved = state.values[axis];
+  for (let i = 0; i < n; i++) {
+    const xv = lo + (hi - lo) * i / (n - 1);
+    state.values[axis] = xv;
+    let Lv;
+    try { Lv = evaluate(state.expr).root.data; }
+    catch { Lv = NaN; }
+    ys.push(Lv);
+    if (Number.isFinite(Lv)) { ymin = Math.min(ymin, Lv); ymax = Math.max(ymax, Lv); }
+  }
+  state.values[axis] = saved;
+  if (!Number.isFinite(ymin) || ymax - ymin < 1e-9) { ymax = ymin + 1; ymin = ymin - 0; }
+
+  const pad = { l: 44, r: 14, t: 14, b: 28 };
+  const xOf = (xv) => pad.l + (xv - lo) / (hi - lo) * (W - pad.l - pad.r);
+  const yOf = (yv) => pad.t + (1 - (yv - ymin) / (ymax - ymin)) * (H - pad.t - pad.b);
+
+  ctx.strokeStyle = "#d9d2c5"; ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, H - pad.b); ctx.lineTo(W - pad.r, H - pad.b); ctx.stroke();
+  ctx.fillStyle = "#6b645a"; ctx.font = "12px IBM Plex Sans, sans-serif";
+  ctx.fillText(axis, W - 20, H - 8);
+  ctx.fillText("L", 16, 16);
+
+  ctx.strokeStyle = "#0f6b5c"; ctx.lineWidth = 2.4; ctx.beginPath();
+  let started = false;
+  for (let i = 0; i < n; i++) {
+    if (!Number.isFinite(ys[i])) { started = false; continue; }
+    const X = xOf(lo + (hi - lo) * i / (n - 1)), Y = yOf(ys[i]);
+    if (!started) { ctx.moveTo(X, Y); started = true; } else ctx.lineTo(X, Y);
+  }
+  ctx.stroke();
+
+  const cur = result.root.data;
+  const cx = xOf(saved), cy = yOf(cur);
+  ctx.fillStyle = "#b4542a";
+  ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
+
+  const g = result.env[axis].grad;
+  if (Math.abs(g) > 1e-8) {
+    const arrow = -Math.sign(g) * 34;
+    ctx.strokeStyle = "#2a4d8f"; ctx.fillStyle = "#2a4d8f"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, cy - 16); ctx.lineTo(cx + arrow, cy - 16); ctx.stroke();
+    const dir = Math.sign(arrow) || 1;
+    ctx.beginPath();
+    ctx.moveTo(cx + arrow, cy - 16);
+    ctx.lineTo(cx + arrow - 6 * dir, cy - 21);
+    ctx.lineTo(cx + arrow - 6 * dir, cy - 11);
+    ctx.closePath(); ctx.fill();
+  }
+}
+
+let lastNamesKey = "";
+function render() {
+  $("err").textContent = "";
+  $("expr").classList.remove("bad");
+  let result;
+  try {
+    result = evaluate(state.expr);
+  } catch (e) {
+    $("err").textContent = e.message || String(e);
+    $("expr").classList.add("bad");
+    return;
+  }
+  const key = result.names.slice().sort().join(",");
+  if (key !== lastNamesKey) {
+    lastNamesKey = key;
+    renderParams(result.names);
+  }
+  renderGraph(result);
+  renderStats(result);
+  renderStory(result);
+  renderLoss(result);
+  $("vlr").textContent = fmt(state.lr, 3);
+}
+
+function syncParamValues(names) {
+  // обновляем слайдеры на месте — без пересборки DOM (иначе кажется, что «ничего не происходит»)
+  const wraps = [...$("paramBox").querySelectorAll(".ctrl")];
+  if (wraps.length !== names.length) {
+    renderParams(names);
+    return;
+  }
+  names.forEach((n, i) => {
+    const wrap = wraps[i];
+    const val = wrap.querySelector(".val");
+    const range = wrap.querySelector('input[type="range"]');
+    const cb = wrap.querySelector('input[type="checkbox"]');
+    if (!val || !range) return;
+    const next = state.values[n];
+    const prev = parseFloat(range.value);
+    val.textContent = fmt(next);
+    range.value = next;
+    if (cb) cb.checked = !!state.isParam[n];
+    if (Number.isFinite(prev) && Math.abs(prev - next) > 1e-9) {
+      val.classList.add("flash");
+      setTimeout(() => val.classList.remove("flash"), 350);
+    }
+  });
+}
+
+function sgdStep() {
+  state.expr = $("expr").value;
+  const result = evaluate(state.expr);
+  const deltas = [];
+  let moved = 0;
+  for (const n of result.names) {
+    if (!state.isParam[n]) continue;
+    const g = result.env[n].grad;
+    const d = -state.lr * g;
+    if (!Number.isFinite(d)) continue;
+    const before = state.values[n];
+    state.values[n] = Math.max(-3, Math.min(3, before + d));
+    const real = state.values[n] - before;
+    if (Math.abs(real) > 1e-12) {
+      moved += 1;
+      deltas.push(`${n}: ${real >= 0 ? "+" : ""}${fmt(real, 3)}`);
+    }
+  }
+  syncParamValues(result.names);
+  lastNamesKey = result.names.slice().sort().join(",");
+
+  const msg = $("stepMsg");
+  if (!result.names.some((n) => state.isParam[n])) {
+    msg.textContent = "нет θ";
+    msg.className = "step-msg warn";
+  } else if (!moved) {
+    msg.textContent = "grad ≈ 0 — у минимума";
+    msg.className = "step-msg warn";
+  } else {
+    msg.textContent = deltas.join("  ");
+    msg.className = "step-msg";
+  }
+  return result;
+}
+
+function stopAnim() {
+  if (state.anim) clearInterval(state.anim);
+  state.anim = null;
+}
+
+function bind() {
+  const presets = $("presets");
+  PRESETS.forEach((p) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = p.name;
+    b.addEventListener("click", () => {
+      state.expr = p.expr;
+      $("expr").value = p.expr;
+      // при смене пресета вернём дефолтные значения — иначе можно остаться в точке L=0
+      Object.keys(state.values).forEach((k) => delete state.values[k]);
+      Object.keys(state.isParam).forEach((k) => delete state.isParam[k]);
+      lastNamesKey = "";
+      stopAnim();
+      $("stepMsg").textContent = "";
+      render();
+    });
+    presets.appendChild(b);
+  });
+
+  let timer = null;
+  $("expr").addEventListener("input", (e) => {
+    state.expr = e.target.value;
+    clearTimeout(timer);
+    timer = setTimeout(() => { lastNamesKey = ""; render(); }, 180);
+  });
+
+  $("lr").addEventListener("input", (e) => {
+    state.lr = parseFloat(e.target.value);
+    $("vlr").textContent = fmt(state.lr, 3);
+  });
+  $("showNum").addEventListener("change", render);
+  $("axis").addEventListener("change", (e) => {
+    state.axis = e.target.value;
+    $("axisLabel").textContent = state.axis;
+    render();
+  });
+
+  const safe = (fn) => () => {
+    try { fn(); }
+    catch (e) {
+      console.error(e);
+      $("err").textContent = e.message || String(e);
+      $("stepMsg").textContent = "Ошибка: " + (e.message || String(e));
+      $("stepMsg").className = "step-msg warn";
+    }
+  };
+
+  $("step").addEventListener("click", safe(() => {
+    stopAnim();
+    sgdStep();
+    render();
+  }));
+  $("animate").addEventListener("click", safe(() => {
+    stopAnim();
+    let left = 25;
+    state.anim = setInterval(safe(() => {
+      sgdStep();
+      render();
+      left -= 1;
+      const msg = $("stepMsg").textContent || "";
+      if (left <= 0 || msg.includes("grad ≈ 0")) stopAnim();
+    }), 100);
+  }));
+  $("resetVals").addEventListener("click", safe(() => {
+    stopAnim();
+    Object.keys(state.values).forEach((n) => { state.values[n] = defaultValue(n); });
+    lastNamesKey = "";
+    $("stepMsg").textContent = "";
+    $("stepMsg").className = "step-msg";
+    render();
+  }));
+}
+
+bind();
+$("expr").value = state.expr;
+render();
+</script>
+</body>
+</html>
